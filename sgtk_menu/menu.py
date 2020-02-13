@@ -28,7 +28,7 @@ import cairo
 from sgtk_menu.tools import (
     localized_category_names, additional_to_main, get_locale_string,
     config_dirs, load_json, save_json, create_default_configs, check_wm,
-    display_geometry, data_dirs, print_version)
+    display_geometry, data_dirs, print_version, known_wms)
 
 wm = check_wm()
 
@@ -140,16 +140,23 @@ def main():
                         help="use alternative {} style sheet instead of style.css"
                         .format(os.path.join(config_dir, '<CSS>')))
     parser.add_argument("-v", "--version", action="store_true", help="display version and exit")
-    parser.add_argument("-wm", action="store_true", help="display detected Window Manager and exit")
+    parser.add_argument("-check", action="store_true", help="display detected Window Manager and exit")
+    parser.add_argument("-wm", type=str, default="", help="display detected Window Manager and exit")
     global args
     args = parser.parse_args()
 
     if args.version:
         print_version()
         sys.exit(0)
-    if args.wm:
-        print(wm)
+
+    if args.check:
+        check_wm(verbose=True)
         sys.exit(0)
+
+    global wm
+    if args.wm:
+        wm = args.wm.lower() if args.wm.lower() in known_wms else "other"
+        print("Forced WM: {}".format(wm))
 
     if args.pointer and wm == "sway":
         args.pointer = False
@@ -234,7 +241,6 @@ def main():
             print("\nFailed to get the current screen geometry, exiting...\n")
             sys.exit(2)
     x, y, w, h = geometry
-    print(geometry)
 
     if wm == "sway":
         # resize to current screen dimensions on sway

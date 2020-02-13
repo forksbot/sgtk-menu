@@ -25,7 +25,8 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GdkPixbuf, GLib
 import cairo
 
-from sgtk_menu.tools import (config_dirs, load_json, create_default_configs, check_wm, display_geometry, path_dirs)
+from sgtk_menu.tools import (config_dirs, load_json, create_default_configs, check_wm, display_geometry, path_dirs,
+                             known_wms)
 
 wm = check_wm()
 
@@ -43,6 +44,7 @@ other_wm = not wm == "sway" and not wm == "i3"
 # Optional dependency: needed to popup the menu at the cursor position in floating WMs
 try:
     from pynput.mouse import Controller
+
     mouse_pointer = Controller()
 except:
     mouse_pointer = None
@@ -100,8 +102,14 @@ def main():
     parser.add_argument("-css", type=str, default="style.css",
                         help="use alternative {} style sheet instead of style.css"
                         .format(os.path.join(config_dir, '<CSS>')))
+    parser.add_argument("-wm", type=str, default="", help="display detected Window Manager and exit")
     global args
     args = parser.parse_args()
+
+    global wm
+    if args.wm:
+        wm = args.wm.lower() if args.wm.lower() in known_wms else "other"
+        print("Forced WM: {}".format(wm))
 
     if args.pointer and wm == "sway":
         args.pointer = False

@@ -27,7 +27,7 @@ from gi.repository import Gtk, Gdk, GdkPixbuf
 import cairo
 
 from sgtk_menu.tools import (get_locale_string, config_dirs, load_json, save_json, create_default_configs, data_dirs,
-                             check_wm, display_geometry)
+                             check_wm, display_geometry, known_wms)
 
 wm = check_wm()
 
@@ -108,8 +108,14 @@ def main():
     parser.add_argument("-css", type=str, default="grid.css",
                         help="use alternative {} style sheet instead of grid.css"
                         .format(os.path.join(config_dir, '<CSS>')))
+    parser.add_argument("-wm", type=str, default="", help="display detected Window Manager and exit")
     global args
     args = parser.parse_args()
+
+    global wm
+    if args.wm:
+        wm = args.wm.lower() if args.wm.lower() in known_wms else "other"
+        print("Forced WM: {}".format(wm))
 
     # Create default config files if not found
     create_default_configs(config_dir)

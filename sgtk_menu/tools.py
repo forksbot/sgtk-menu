@@ -2,7 +2,7 @@
 # _*_ coding: utf-8 _*_
 
 """
-Most part of this code is heavily influenced by Johan Malm's
+A part of this code is heavily influenced by Johan Malm's
 https://github.com/johanmalm/jgmenu/blob/master/contrib/pmenu/jgmenu-pmenu.py
 
 Copyright (C) 2016-2017 Ovidiu M <mrovi9000@gmail.com>
@@ -17,36 +17,62 @@ import json
 import pkg_resources
 
 
-def check_wm():
+known_wms = ["sway", "i3", "openbox", "fvwm", "dwm", "yaxwm"]
+
+
+def check_wm(verbose=False):
     env = os.environ
-    for key in env:
-        if key == "DESKTOP_SESSION":
-            if env[key].endswith("sway"):
+    try:
+        if env["DESKTOP_SESSION"]:
+            val = env["DESKTOP_SESSION"]
+            if val:
+                if "/" not in val:
+                    # gdm returns just the session name
+                    if verbose:
+                        print("DESKTOP_SESSION={}".format(val))
+                    return val
+                else:
+                    # while e.g. lightdm returns all the path to the .desktop file
+                    if verbose:
+                        print("DESKTOP_SESSION={}".format(val))
+                    return val.split("/")[-1]
+    except KeyError:
+        pass
+    
+    try:
+        if env["I3SOCK"]:
+            val = env["I3SOCK"]
+            if "sway" in val:
+                if verbose:
+                    print("I3SOCK={}".format(val))
                 return "sway"
-            elif env[key].endswith("i3"):
+            elif "i3" in val:
+                if verbose:
+                    print("I3SOCK={}".format(val))
                 return "i3"
-            elif env[key].endswith("openbox"):
-                return "openbox"
-            elif "/usr" in env[key]:
-                return env[key].split("/")[-1]
-        elif key == "I3SOCK":
-            if "sway" in env[key]:
-                return "sway"
-            elif "i3" in env[key]:
-                return "i3"
+    except KeyError:
+        pass
+
+    # If all above failed
     try:
         if subprocess.run(
                 ['swaymsg', '-t', 'get_seats'], stdout=subprocess.DEVNULL).returncode == 0:
+            if verbose:
+                print("Detected w/ swaymsg -t get_seats")
             return "sway"
     except:
         pass
 
     try:
         if subprocess.run(['i3-msg', '-t', 'get_outputs'], stdout=subprocess.DEVNULL).returncode == 0:
+            if verbose:
+                print("Detected w/ i3-msg -t get_outputs")
             return "i3"
     except:
         pass
-    
+
+    if verbose:
+        print("Couldn't detect WM")
     return "other"
 
 
